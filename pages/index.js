@@ -15,9 +15,15 @@ export default function Home() {
       try {
         const response = await fetch(`/api/fuel?fuelType=${fuelType}`);
         const data = await response.json();
-        setStations(data);
+        if (Array.isArray(data)) {
+          setStations(data);
+        } else {
+          console.warn("Unexpected API data format:", data);
+          setStations([]);
+        }
       } catch (err) {
         console.error("Failed to fetch FuelCheck data:", err);
+        setStations([]);
       }
     };
     fetchFuelData();
