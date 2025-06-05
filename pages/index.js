@@ -1,7 +1,6 @@
-// pages/index.js - FuelPilot with Next.js and Google Maps API integration
+// pages/index.js - FuelPilot with Next.js and Google Maps API integration and FuelCheck API proxy
 import { useEffect, useState } from "react";
-
-const FUELCHECK_API_URL = "https://data.nsw.gov.au/data/api/3/action/datastore_search?resource_id=6f15cbd0-bf58-4bcb-a52e-6d40868b40b0&limit=100";
+import Script from "next/script";
 
 export default function Home() {
   const [stations, setStations] = useState([]);
@@ -14,17 +13,9 @@ export default function Home() {
   useEffect(() => {
     const fetchFuelData = async () => {
       try {
-        const response = await fetch(FUELCHECK_API_URL);
+        const response = await fetch(`/api/fuel?fuelType=${fuelType}`);
         const data = await response.json();
-        const filtered = data.result.records.filter(r => r.fueltype === fuelType);
-        const records = filtered.map((record, idx) => ({
-          id: idx,
-          name: record.station_name,
-          lat: parseFloat(record.latitude),
-          lng: parseFloat(record.longitude),
-          price: record.price,
-        }));
-        setStations(records);
+        setStations(data);
       } catch (err) {
         console.error("Failed to fetch FuelCheck data:", err);
       }
@@ -32,29 +23,17 @@ export default function Home() {
     fetchFuelData();
   }, [fuelType]);
 
-  useEffect(() => {
-    const loadGoogleMapsScript = () => {
-      if (document.getElementById("google-maps-script")) return;
-      const script = document.createElement("script");
-      script.id = "google-maps-script";
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initMap;
-      document.head.appendChild(script);
-    };
-    loadGoogleMapsScript();
-  }, [darkMode]);
-
   const initMap = () => {
     const mapInstance = new window.google.maps.Map(document.getElementById("map"), {
       center: { lat: -31.085, lng: 152.832 },
       zoom: 13,
-      styles: darkMode ? [
-        { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-        { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-      ] : [],
+      styles: darkMode
+        ? [
+            { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+          ]
+        : [],
     });
     setMap(mapInstance);
   };
@@ -69,7 +48,7 @@ export default function Home() {
         title: `${station.name} - $${station.price}/L`,
       });
       const infoWindow = new window.google.maps.InfoWindow({
-        content: `<strong>${station.name}</strong><br/>$${station.price} / L`
+        content: `<strong>${station.name}</strong><br/>$${station.price} / L`,
       });
       marker.addListener("click", () => infoWindow.open(map, marker));
     });
@@ -98,6 +77,11 @@ export default function Home() {
 
   return (
     <div className={darkMode ? "dark" : "light"}>
+      <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        strategy="afterInteractive"
+        onLoad={initMap}
+      />
       <header className="p-4 flex justify-between items-center shadow">
         <h1 className="text-xl font-bold">FuelPilot</h1>
         <div className="flex gap-2 items-center">
