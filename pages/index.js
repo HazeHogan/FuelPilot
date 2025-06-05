@@ -1,6 +1,7 @@
 // pages/index.js - FuelPilot with Next.js and Google Maps API integration and FuelCheck API proxy
 import { useEffect, useState } from "react";
 import Script from "next/script";
+import Head from "next/head";
 
 export default function Home() {
   const [stations, setStations] = useState([]);
@@ -83,7 +84,14 @@ export default function Home() {
 
   return (
     <div className={darkMode ? "dark" : "light"}>
+      <Head>
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="theme-color" content="#1e40af" />
+      </Head>
       <Script
+        async
         src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
         strategy="afterInteractive"
         onLoad={initMap}
